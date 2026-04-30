@@ -2,13 +2,7 @@
 
 Simple streamlit app to compare different retrieval methods.
 
-### What it does
 
-- **4 different retrieval methods**:
-  - **Keyword**: Finds recipes with your exact words
-  - **Semantic**: Finds recipes based on semantic meaning
-  - **Hybrid**: Mixes both keyword and semantic search (based on scores)
-  - **RRF**: Combines results from keyword and semantic results (based on rankings)
 
 ### Step 1: Clone the repository
 ```bash
