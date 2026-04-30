@@ -1,29 +1,57 @@
-# README #
+# Recipe Search App
 
-This README would normally document whatever steps are necessary to get your application up and running.
+Simple streamlit app to compare different retrieval methods.
 
-### What is this repository for? ###
+### What it does
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+- **4 different retrieval methods**:
+  - **Keyword**: Finds recipes with your exact words
+  - **Semantic**: Finds recipes based on semantic meaning
+  - **Hybrid**: Mixes both keyword and semantic search (based on scores)
+  - **RRF**: Combines results from keyword and semantic results (based on rankings)
 
-### How do I get set up? ###
+### Step 1: Clone the repository
+```bash
+cd semantic_search_streamlit
+```
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+### Step 2: Virtual Environment
+```bash
+python -m venv venv
+source venv/bin/activate
+```
 
-### Contribution guidelines ###
+### Step 3: Install dependencies
+```bash
+pip install -r requirements.txt
+```
 
-* Writing tests
-* Code review
-* Other guidelines
+### Step 4: Set up your settings
+Create `.env` file and add details
 
-### Who do I talk to? ###
+```
+THUMBOR_KEY=""
+ES_URL=""
+ES_USERNAME=""
+ES_PASSWORD=""
+OPENAI_API_KEY=""
+# Intent lane: in-app OpenAI only (bypass site-search HTTP API) — leave unset or force:
+# SITE_SEARCH_INTENT_URL=""
+# FORCE_LOCAL_INTENT=1
+# Optional: intent HTTP uses {"term","algoType"} like internal APIs — set SITE_SEARCH_INTENT_USE_TERM=1
+#
+# Lane 3 — call Site Search GET /search (service runs LLM + ES; Streamlit hydrates cards from ES):
+# SITE_SEARCH_API_BASE_URL="https://your-site-search-host"
+# SITE_SEARCH_API_PATH="/search"
+# SITE_SEARCH_ALGO_TYPE="MYRECIPES"
+# SITE_SEARCH_API_AUTH_HEADER="Bearer ..."   # if required
+# SITE_SEARCH_API_EXTRA_FILTERS=""         # optional: "cuisines:ITALIAN|totaltime:30MINUTESORLESS" (| = extra params)
+# SITE_SEARCH_STREAMLIT_MATCH_SWAGGER_DEFAULTS=1   # Current/Filtered omit useIntent/useSemantic (API defaults true). Set 0 for legacy useIntent=false on those lanes.
+```
 
-* Repo owner or admin
-* Other community or team contact
+### Start the app
+```bash
+streamlit run app.py
+```
+
+The app will open in your web browser at `http://localhost:8501`
