@@ -12,7 +12,7 @@ Simple streamlit app to compare different retrieval methods.
 
 ### Step 1: Clone the repository
 ```bash
-cd semantic_search_streamlit
+cd LLM-Intent-search-streamlit
 ```
 
 ### Step 2: Virtual Environment
@@ -35,6 +35,10 @@ ES_URL=""
 ES_USERNAME=""
 ES_PASSWORD=""
 OPENAI_API_KEY=""
+
+SITE_SEARCH_API_BASE_URL="http://localhost:8000"
+SITE_SEARCH_API_PATH="/search"
+SITE_SEARCH_ALGO_TYPE="MYRECIPES"
 ```
 
 ### Start the app
