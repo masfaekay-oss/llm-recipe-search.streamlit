@@ -1,8 +1,7 @@
-# Stages: base, build, run, export (required by CI-CD-Pipeline/core/build-artifact-multistage).
-# Every FROM must use a real registry image (not "FROM build AS run").
-# Jenkins getImageNamesFromDockerfile also mis-reads COPY --from=base / COPY --from=build as images to
-# pull — use COPY --from=0 / COPY --from=1 (0-based stage index: 0=base, 1=build, 2=run, 3=export).
-# Do not use a top-level # syntax= line; some parsers mis-handle it.
+# Stages: base, build, run, export (CI-CD-Pipeline/core/build-artifact-multistage).
+# No COPY --from — internal getImageNamesFromDockerfile mis-parses COPY --from=... as images to pull
+# (stage names or numeric indexes both break pullAll with "Image could not be parsed").
+# Each stage uses only FROM python:3.8-slim + normal COPY/RUN (slower but scanner-safe).
 ARG BUILD_TYPE
 ARG GIT_BRANCH
 ARG DRY_RUN
@@ -18,14 +17,15 @@ FROM python:3.8-slim AS build
 
 WORKDIR /semantic_search_streamlit
 
-# Reference stage 0 (base) without using the name "base" in COPY --from (Jenkins pullAll).
-COPY --from=0 /etc/debian_version /tmp/base-debian_version
-
 COPY requirements.txt /semantic_search_streamlit/requirements.txt
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
 RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . /semantic_search_streamlit
+
+RUN python -c "import streamlit, elasticsearch, openai, requests, dotenv"
 
 FROM python:3.8-slim AS run
 
@@ -33,7 +33,9 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-COPY --from=1 /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+COPY requirements.txt /semantic_search_streamlit/requirements.txt
+
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /semantic_search_streamlit
 
@@ -47,7 +49,9 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-COPY --from=1 /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+COPY requirements.txt /semantic_search_streamlit/requirements.txt
+
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /semantic_search_streamlit
 
