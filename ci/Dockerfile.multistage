@@ -1,7 +1,4 @@
-# Multistage for CI-CD-Pipeline build-artifact-multistage (stage names: base, build, run, export).
-# No COPY --from=... lines: Jenkins getImageNamesFromDockerfile / pullAll may treat stage names as image refs.
-# Every stage uses the same external base: docker.io/library/python:3.8-slim
-FROM docker.io/library/python:3.8-slim AS base
+FROM public.ecr.aws/docker/library/python:3.8-slim AS base
 
 ARG BUILD_TYPE
 ARG GIT_BRANCH
@@ -12,7 +9,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-FROM docker.io/library/python:3.8-slim AS build
+FROM public.ecr.aws/docker/library/python:3.8-slim AS build
 
 WORKDIR /semantic_search_streamlit
 
@@ -26,7 +23,7 @@ COPY . /semantic_search_streamlit
 
 RUN python -c "import streamlit, elasticsearch, openai, requests, dotenv"
 
-FROM docker.io/library/python:3.8-slim AS run
+FROM public.ecr.aws/docker/library/python:3.8-slim AS run
 
 ENV PYTHONUNBUFFERED=1
 
@@ -42,7 +39,7 @@ EXPOSE 8502
 
 CMD ["python", "-m", "streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
 
-FROM docker.io/library/python:3.8-slim AS export
+FROM public.ecr.aws/docker/library/python:3.8-slim AS export
 
 ENV PYTHONUNBUFFERED=1
 
