@@ -1,5 +1,5 @@
-# Multistage for CI-CD-Pipeline build-artifact-multistage (stages: base, build, run, export).
-# Use a full registry path on every stage base image so Jenkins pre-pull can resolve the image.
+# Multistage for CI-CD-Pipeline build-artifact-multistage (stage names: base, build, run, export).
+# Every stage line below uses docker.io/library/python:3.8-slim for Jenkins image pre-pull parsing.
 FROM docker.io/library/python:3.8-slim AS base
 
 ARG BUILD_TYPE
@@ -14,8 +14,6 @@ WORKDIR /semantic_search_streamlit
 FROM docker.io/library/python:3.8-slim AS build
 
 WORKDIR /semantic_search_streamlit
-
-COPY --from=base /etc/debian_version /tmp/base-debian_version
 
 COPY requirements.txt /semantic_search_streamlit/requirements.txt
 
