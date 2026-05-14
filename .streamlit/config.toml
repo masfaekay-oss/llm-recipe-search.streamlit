@@ -1,8 +1,24 @@
+# Streamlit defaults aligned with ci/manifest.json (Squadron / ECS-style deploy):
+#   - exposedPorts: 8502 (http) — container must listen here for target health checks.
+#   - healthCheck: /_stcore/health — served by Streamlit when the server is up.
+#   - role: app.ecs.basic; resources: 512 CPU / 1024 MiB; scaling can run multiple tasks.
+# Multi-task: use ALB sticky sessions so WebSocket sessions reconnect to the same task
+# (see Streamlit “replication” / disconnectedSessionTTL in upstream docs).
+#
+# Secrets and API endpoints (OpenAI, Elasticsearch, site-search) are read from the process
+# environment in app.py, not from this file. Local Streamlit secrets file: .streamlit/secrets.toml (gitignored).
+
 [server]
-headless = true
 address = "0.0.0.0"
 port = 8502
+headless = true
 fileWatcherType = "none"
+runOnSave = false
+enableXsrfProtection = true
+# If users reach the app via a real hostname (ALB / service URL), set at deploy time, e.g.:
+#   STREAMLIT_BROWSER_SERVER_ADDRESS=https://<your-service-host>
+# so XSRF/CORS browser URL metadata matches how the UI is opened (Streamlit [browser] serverAddress).
 
 [browser]
 gatherUsageStats = false
+serverPort = 8502
