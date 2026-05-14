@@ -1,29 +1,28 @@
 # syntax=docker/dockerfile:1
-# Multi-stage for CI-CD-Pipeline/core/build-artifact-multistage (must exist at ci/Dockerfile.multistage).
-# Final stage must be named "production" — many Jenkins jobs use --target production.
-# Do not COPY /usr/local/bin from the deps stage: it can clobber the runtime python shim on some agents.
+# Stages must match CI-CD-Pipeline/core/build-artifact-multistage: base, build, run, export
 ARG BUILD_TYPE
 ARG GIT_BRANCH
 ARG DRY_RUN
 ARG DEBUG_LOGGING
 
-FROM python:3.8-slim AS dependencies
-
-WORKDIR /semantic_search_streamlit
-
-COPY requirements.txt /semantic_search_streamlit/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
-FROM python:3.8-slim AS production
+FROM python:3.8-slim AS base
 
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-COPY --from=dependencies /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+FROM base AS build
+
+COPY requirements.txt /semantic_search_streamlit/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM build AS run
 
 COPY . /semantic_search_streamlit
 
 EXPOSE 8502
 
 CMD ["python", "-m", "streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
+
+# Final publishable image (same filesystem as run; required stage name for pipeline export)
+FROM run AS export
