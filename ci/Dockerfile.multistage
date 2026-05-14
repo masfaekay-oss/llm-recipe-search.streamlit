@@ -41,6 +41,9 @@ CMD ["python", "-m", "streamlit", "run", "app.py", "--server.port=8502", "--serv
 
 FROM {{BASE_REGISTRY_URL}}/docker/library/python:3.8-slim AS export
 
+ARG VERSION={{VERSION}}
+ENV VERSION=${VERSION}
+
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
@@ -51,7 +54,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /semantic_search_streamlit
 
-RUN printf '%s\n' '{"repo":"run","name":"llm-intent-search-streamlit","tag":"{{VERSION}}","qualifiedId":"llm-intent-search-streamlit:{{VERSION}}"}' > /build.json
+RUN python3 -c "import json, os; v=os.environ.get('VERSION',''); open('/build.json','w').write(json.dumps({'repo':'run','name':'llm-intent-search-streamlit','tag':v,'qualifiedId':'llm-intent-search-streamlit:'+v}))"
 
 EXPOSE 8502
 
