@@ -42,20 +42,32 @@ def _strip_surrounding_quotes(raw: str) -> str:
     return s
 
 
+def _config_str(key: str, default: str = "") -> str:
+    """``os.environ`` first, then Streamlit **Secrets** (Community Cloud / ``secrets.toml``), same key names."""
+    raw = os.getenv(key)
+    if raw is not None and str(raw).strip():
+        return _strip_surrounding_quotes(str(raw)).strip()
+    try:
+        if key in st.secrets:
+            val = st.secrets[key]
+            if val is not None and str(val).strip():
+                return _strip_surrounding_quotes(str(val)).strip()
+    except Exception:
+        pass
+    return default
+
+
 def _site_search_base_url() -> str:
-    base = _strip_surrounding_quotes(os.getenv("SITE_SEARCH_API_BASE_URL") or "").rstrip("/")
-    if not base:
-        raise RuntimeError("SITE_SEARCH_API_BASE_URL is not set (e.g. http://localhost:8000)")
-    return base
+    return _config_str("SITE_SEARCH_API_BASE_URL", "").rstrip("/")
 
 
 def _search_path() -> str:
-    p = _strip_surrounding_quotes(os.getenv("SITE_SEARCH_API_PATH") or "/search")
+    p = _config_str("SITE_SEARCH_API_PATH", "/search")
     return p if p.startswith("/") else "/" + p
 
 
 def _intent_preview_path() -> str:
-    p = _strip_surrounding_quotes(os.getenv("SITE_SEARCH_INTENT_PREVIEW_PATH") or "/intent/preview")
+    p = _config_str("SITE_SEARCH_INTENT_PREVIEW_PATH", "/intent/preview")
     return p if p.startswith("/") else "/" + p
 
 
@@ -139,9 +151,9 @@ def call_site_search(
 ) -> dict[str, Any]:
     filters = _merge_unique_additional_filter_keys(list(filters))
     algo = _normalize_algo_type(algo_type)
-    timeout = float(os.getenv("SITE_SEARCH_API_TIMEOUT", "120"))
+    timeout = float(_config_str("SITE_SEARCH_API_TIMEOUT", "120") or "120")
     headers: dict[str, str] = {}
-    auth = _strip_surrounding_quotes(os.getenv("SITE_SEARCH_API_AUTH_HEADER") or "").strip()
+    auth = _strip_surrounding_quotes(_config_str("SITE_SEARCH_API_AUTH_HEADER", "")).strip()
     if auth:
         headers["Authorization"] = auth
     params_list: list[tuple[str, str]] = [
@@ -181,9 +193,9 @@ def call_intent_preview(
     **GET /intent/preview** — same MyRecipes intent orchestrator as search (service-side LLM + cache).
     """
     algo = _normalize_algo_type(algo_type)
-    timeout = float(os.getenv("SITE_SEARCH_API_TIMEOUT", "120"))
+    timeout = float(_config_str("SITE_SEARCH_API_TIMEOUT", "120") or "120")
     headers: dict[str, str] = {}
-    auth = _strip_surrounding_quotes(os.getenv("SITE_SEARCH_API_AUTH_HEADER") or "").strip()
+    auth = _strip_surrounding_quotes(_config_str("SITE_SEARCH_API_AUTH_HEADER", "")).strip()
     if auth:
         headers["Authorization"] = auth
     path = _intent_preview_path()
@@ -318,6 +330,14 @@ def main() -> None:
     st.title("Natural Language search light POC")
 
     base_url = _site_search_base_url()
+    if not base_url:
+        st.error(
+            "**SITE_SEARCH_API_BASE_URL** is not set. "
+            "Local: use a `.env` file or export the variable. "
+            "Streamlit Community Cloud: **App settings → Secrets** and add the same key (see `.streamlit/secrets.toml.example`)."
+        )
+        st.stop()
+
     with st.sidebar:
         st.text_input("Site Search base URL", value=base_url, disabled=True)
         show_debug = st.checkbox("Show raw /search JSON (debug)", value=False)
@@ -328,7 +348,7 @@ def main() -> None:
 
     use_semantic = st.checkbox(
         "useSemantic (all /search calls)",
-        value=(os.getenv("SITE_SEARCH_STREAMLIT_USE_SEMANTIC") or "true").strip().lower()
+        value=(_config_str("SITE_SEARCH_STREAMLIT_USE_SEMANTIC", "true") or "true").strip().lower()
         in ("1", "true", "yes"),
     )
 
@@ -345,7 +365,7 @@ def main() -> None:
     with c3:
         algo = st.text_input(
             "algoType",
-            value=_normalize_algo_type(os.getenv("SITE_SEARCH_ALGO_TYPE")),
+            value=_normalize_algo_type(_config_str("SITE_SEARCH_ALGO_TYPE", "")),
         )
         algo = _normalize_algo_type(algo)
 
