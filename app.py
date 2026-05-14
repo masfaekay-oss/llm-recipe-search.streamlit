@@ -3,7 +3,7 @@ Natural Language search — **light POC** (demo only).
 
 Three lanes: **Current** (no intent), **Filtered** (manual brands · cuisine · course / cook time),
 **LLM intent** (``useIntent=true`` on site-search-service). Optional **intent panel** calls
-**GET /intent/preview** on the same site-search host (same orchestrator as search; no LLM in Streamlit).
+**GET /intent/preview** on the same site-search host (off by default until that route exists; search lanes do not need it).
 Lane failures are isolated.
 
 Hydrates recipe titles from Elasticsearch when ``ES_URL`` is configured; otherwise shows doc ids.
@@ -34,21 +34,35 @@ if not logging.getLogger().handlers:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
 
+def _strip_surrounding_quotes(raw: str) -> str:
+    """Docker ``--env-file`` and some editors keep literal ``\"`` around values; strip them."""
+    s = raw.strip()
+    while len(s) >= 2 and s[0] == s[-1] and s[0] in "\"'":
+        s = s[1:-1].strip()
+    return s
+
+
 def _site_search_base_url() -> str:
-    base = (os.getenv("SITE_SEARCH_API_BASE_URL") or "").strip().rstrip("/")
+    base = _strip_surrounding_quotes(os.getenv("SITE_SEARCH_API_BASE_URL") or "").rstrip("/")
     if not base:
         raise RuntimeError("SITE_SEARCH_API_BASE_URL is not set (e.g. http://localhost:8000)")
     return base
 
 
 def _search_path() -> str:
-    p = (os.getenv("SITE_SEARCH_API_PATH") or "/search").strip()
+    p = _strip_surrounding_quotes(os.getenv("SITE_SEARCH_API_PATH") or "/search")
     return p if p.startswith("/") else "/" + p
 
 
 def _intent_preview_path() -> str:
-    p = (os.getenv("SITE_SEARCH_INTENT_PREVIEW_PATH") or "/intent/preview").strip()
+    p = _strip_surrounding_quotes(os.getenv("SITE_SEARCH_INTENT_PREVIEW_PATH") or "/intent/preview")
     return p if p.startswith("/") else "/" + p
+
+
+def _normalize_algo_type(algo_type: str | None) -> str:
+    """Strip Docker env-file quotes so we send ``MYRECIPES``, not ``\"MYRECIPES\"`` (``%22`` in query)."""
+    raw = _strip_surrounding_quotes((algo_type or "MYRECIPES").strip())
+    return raw if raw else "MYRECIPES"
 
 
 # Two pick-lists for **Filtered** lane; merged into one ``brands:`` token (unique keys only).
@@ -124,10 +138,10 @@ def call_site_search(
     allow_fuzzy: bool = False,
 ) -> dict[str, Any]:
     filters = _merge_unique_additional_filter_keys(list(filters))
-    algo = (algo_type or "MYRECIPES").strip()
+    algo = _normalize_algo_type(algo_type)
     timeout = float(os.getenv("SITE_SEARCH_API_TIMEOUT", "120"))
     headers: dict[str, str] = {}
-    auth = (os.getenv("SITE_SEARCH_API_AUTH_HEADER") or "").strip()
+    auth = _strip_surrounding_quotes(os.getenv("SITE_SEARCH_API_AUTH_HEADER") or "").strip()
     if auth:
         headers["Authorization"] = auth
     params_list: list[tuple[str, str]] = [
@@ -166,10 +180,10 @@ def call_intent_preview(
     """
     **GET /intent/preview** — same MyRecipes intent orchestrator as search (service-side LLM + cache).
     """
-    algo = (algo_type or "MYRECIPES").strip()
+    algo = _normalize_algo_type(algo_type)
     timeout = float(os.getenv("SITE_SEARCH_API_TIMEOUT", "120"))
     headers: dict[str, str] = {}
-    auth = (os.getenv("SITE_SEARCH_API_AUTH_HEADER") or "").strip()
+    auth = _strip_surrounding_quotes(os.getenv("SITE_SEARCH_API_AUTH_HEADER") or "").strip()
     if auth:
         headers["Authorization"] = auth
     path = _intent_preview_path()
@@ -218,15 +232,19 @@ def _intent_panel_from_site_search(
                 detail = e.response.text[:500]
             except Exception:
                 detail = str(e.response.status_code)
-        logger.exception("intent preview HTTP failed")
+        status = getattr(e.response, "status_code", None)
+        if status == 404:
+            logger.info("Intent preview not available (404); search lanes unaffected: %s", e)
+        else:
+            logger.warning("Intent preview HTTP error (%s): %s", status, e)
         return {
             "_error": str(e),
-            "_http_status": getattr(e.response, "status_code", None),
+            "_http_status": status,
             "_body_preview": detail,
-            "_note": "Deploy site-search with GET /intent/preview (MYRECIPES). Intent panel only.",
+            "_note": "Intent panel only. Search uses GET /search and does not require /intent/preview.",
         }
     except Exception as e:
-        logger.exception("intent preview failed")
+        logger.warning("Intent preview failed (search lanes unaffected): %s", e)
         return {
             "_error": str(e),
             "_note": "Intent panel only; search lanes are unchanged.",
@@ -304,8 +322,8 @@ def main() -> None:
         st.text_input("Site Search base URL", value=base_url, disabled=True)
         show_debug = st.checkbox("Show raw /search JSON (debug)", value=False)
         run_intent_panel = st.checkbox(
-            "Run intent panel (GET /intent/preview on site-search — MYRECIPES)",
-            value=True,
+            "Run intent panel (GET /intent/preview — optional; off until that route exists on your host)",
+            value=False,
         )
 
     use_semantic = st.checkbox(
@@ -325,7 +343,11 @@ def main() -> None:
     with c2:
         offset = st.number_input("offset", 0, 10_000, 0)
     with c3:
-        algo = st.text_input("algoType", value=os.getenv("SITE_SEARCH_ALGO_TYPE") or "MYRECIPES")
+        algo = st.text_input(
+            "algoType",
+            value=_normalize_algo_type(os.getenv("SITE_SEARCH_ALGO_TYPE")),
+        )
+        algo = _normalize_algo_type(algo)
 
     st.markdown("##### Filtered lane — manual facets (brands · cuisine · course · cook time)")
     b1, b2 = st.columns(2)
@@ -438,11 +460,20 @@ def main() -> None:
     )
     ip = poc.get("intent_panel")
     if isinstance(ip, dict) and ip.get("_skipped"):
-        st.info("Intent panel skipped (checkbox off).")
+        st.info("Intent panel skipped (checkbox off). **Search lanes still ran.**")
     elif isinstance(ip, dict) and ip.get("_error"):
-        st.warning(ip.get("_error"))
-        st.json({k: v for k, v in ip.items() if not str(k).startswith("_")} or ip)
+        status = ip.get("_http_status")
+        if status == 404:
+            st.info(
+                "**Intent preview** returned 404 (route not on this site-search build yet). "
+                "**Recipe lanes below still used GET /search** — no intent-parser deploy required for those."
+            )
+        else:
+            st.warning(ip.get("_error"))
+        if ip.get("_body_preview") and status != 404:
+            st.caption(ip.get("_body_preview"))
     elif isinstance(ip, dict):
+        st.success("Intent preview returned data (GET /intent/preview).")
         st.json(ip)
     else:
         st.caption("No intent data.")

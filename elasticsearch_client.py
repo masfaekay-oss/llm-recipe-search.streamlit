@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from elasticsearch import Elasticsearch
 from dotenv import load_dotenv
 import os
