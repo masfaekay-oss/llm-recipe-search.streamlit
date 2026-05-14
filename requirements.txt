@@ -1,5 +1,6 @@
 streamlit == 1.32.2
-python-dotenv
-requests
-elasticsearch~=8.13.2
-openai
+python-dotenv == 1.0.1
+requests == 2.32.4
+elasticsearch ~= 8.13.2
+# Pinned so pip does not backtrack through many openai releases (slow / memory-heavy in constrained CI agents).
+openai == 2.2.0

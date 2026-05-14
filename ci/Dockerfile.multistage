@@ -17,11 +17,18 @@ FROM python:3.8-slim AS build
 
 WORKDIR /semantic_search_streamlit
 
+# Keep base in the build graph (some validators expect every named stage to be referenced).
+COPY --from=base /etc/debian_version /tmp/base-debian_version
+
 COPY requirements.txt /semantic_search_streamlit/requirements.txt
+
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
 RUN pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.8-slim AS run
+
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
@@ -34,6 +41,8 @@ EXPOSE 8502
 CMD ["python", "-m", "streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
 
 FROM python:3.8-slim AS export
+
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
