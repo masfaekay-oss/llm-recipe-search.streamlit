@@ -1,7 +1,8 @@
 {
   "version": "1.0",
   "ci": {
-    "disableUnitTests": true
+    "disableUnitTests": true,
+    "packageRepository": "s3"
   },
   "deployable": "service",
   "role": "app.ecs.basic",
