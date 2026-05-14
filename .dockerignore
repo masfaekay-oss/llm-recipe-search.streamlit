@@ -1,0 +1,12 @@
+# Smaller/faster Docker build context (helps Jenkins build-artifact-s3).
+.env
+.git
+.github
+.venv-test
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.DS_Store
+.streamlit/secrets.toml
