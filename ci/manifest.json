@@ -1,5 +1,6 @@
 {
   "version": "1.0",
+  "arch_force_build": "linux/arm64",
   "ci": {
     "disableUnitTests": true,
     "packageRepository": "s3"
@@ -42,7 +43,7 @@
       }
     ]
   },
-  "description": "Streamlit POC for NL recipe search: compares current / filtered / LLM-intent lanes against site-search GET /search. Optional GET /intent/preview panel. Not the site-search FastAPI service — different process (Streamlit on 8502).",
+  "description": "Streamlit POC for NL recipe search: compares current / filtered / LLM-intent lanes against site-search GET /search. Optional GET /intent/preview panel. Not the site-search FastAPI service - different process (Streamlit on 8502).",
   "documentation": "https://bitbucket.org/people-inc/llm-intent-search-streamlit/src/main/README.md",
   "jiraProject": "CPI",
   "incidentManagement": {
