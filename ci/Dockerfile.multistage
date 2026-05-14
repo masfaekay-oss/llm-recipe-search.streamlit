@@ -1,5 +1,5 @@
-# Base image path matches AWS ECR pull-through cache for Docker Hub official images (docker-hub/library/...).
-FROM {{BASE_REGISTRY_URL}}/docker-hub/library/python:3.8-slim AS base
+# Org ECR base image (same pattern as other deployed services), not Docker Hub pull-through.
+FROM {{BASE_REGISTRY_URL}}/common/python:3.12.4 AS base
 
 ARG BUILD_TYPE
 ARG GIT_BRANCH
@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-FROM {{BASE_REGISTRY_URL}}/docker-hub/library/python:3.8-slim AS build
+FROM {{BASE_REGISTRY_URL}}/common/python:3.12.4 AS build
 
 WORKDIR /semantic_search_streamlit
 
@@ -24,7 +24,7 @@ COPY . /semantic_search_streamlit
 
 RUN python -c "import streamlit, elasticsearch, openai, requests, dotenv"
 
-FROM {{BASE_REGISTRY_URL}}/docker-hub/library/python:3.8-slim AS run
+FROM {{BASE_REGISTRY_URL}}/common/python:3.12.4 AS run
 
 ENV PYTHONUNBUFFERED=1
 
@@ -40,7 +40,7 @@ EXPOSE 8502
 
 CMD ["python", "-m", "streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
 
-FROM {{BASE_REGISTRY_URL}}/docker-hub/library/python:3.8-slim AS export
+FROM {{BASE_REGISTRY_URL}}/common/python:3.12.4 AS export
 
 ARG VERSION={{VERSION}}
 ENV VERSION=${VERSION}
@@ -55,7 +55,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /semantic_search_streamlit
 
-RUN python3 -c "import json, os; v=os.environ.get('VERSION',''); open('/build.json','w').write(json.dumps({'repo':'run','name':'llm-intent-search-streamlit','tag':v,'qualifiedId':'llm-intent-search-streamlit:'+v}))"
+RUN python -c "import json, os; v=os.environ.get('VERSION',''); open('/build.json','w').write(json.dumps({'repo':'run','name':'llm-intent-search-streamlit','tag':v,'qualifiedId':'llm-intent-search-streamlit:'+v}))"
 
 EXPOSE 8502
 
