@@ -1,0 +1,21 @@
+# Multi-stage image required by CI-CD-Pipeline/core/build-artifact (fetches ci/Dockerfile.multistage).
+# Stage "dependencies" installs Python deps; "runtime" copies app + site-packages for a smaller final layer pattern.
+FROM python:3.8-slim AS dependencies
+
+WORKDIR /semantic_search_streamlit
+
+COPY requirements.txt /semantic_search_streamlit/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM python:3.8-slim AS runtime
+
+WORKDIR /semantic_search_streamlit
+
+COPY --from=dependencies /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+COPY --from=dependencies /usr/local/bin /usr/local/bin
+
+COPY . /semantic_search_streamlit
+
+EXPOSE 8502
+
+CMD ["streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
