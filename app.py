@@ -282,6 +282,13 @@ def _get_es_client():
         return None
 
 
+def _lane_err_looks_like_private_dns(err: str | None) -> bool:
+    if not err:
+        return False
+    e = err.lower()
+    return "name or service not known" in e or "failed to resolve" in e or "gaierror" in e
+
+
 def _render_recipe_lane(title: str, lane_result: dict[str, Any] | None, err: str | None) -> None:
     st.markdown(f"### {title}")
     if err:
@@ -501,6 +508,19 @@ def main() -> None:
     st.markdown("---")
     st.subheader("Recipe results (three lanes)")
     lane_errors = poc.get("lane_errors") or {}
+    if all(
+        lane_errors.get(k) and _lane_err_looks_like_private_dns(lane_errors.get(k))
+        for k in ("current", "filtered", "llm")
+    ):
+        st.info(
+            "**Host not reachable from this runtime:** the site-search hostname did not resolve "
+            "(typical for internal / VPC-only URLs). **Streamlit Community Cloud** runs on public "
+            "infrastructure and cannot use corporate DNS or private endpoints. Options: expose site-search "
+            "through a **public** HTTPS URL (with auth), run this app **inside** your network "
+            "(self-hosted Streamlit, VPN-connected runner), or point **SITE_SEARCH_API_BASE_URL** at a "
+            "dev stack that is reachable from here. Ensure **App settings → Secrets** defines the same "
+            "keys as your local `.env` (Community Cloud does not load committed `.env` files)."
+        )
     c1, c2, c3 = st.columns(3)
     with c1:
         _render_recipe_lane(
