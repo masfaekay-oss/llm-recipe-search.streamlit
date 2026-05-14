@@ -1,5 +1,11 @@
-# Multi-stage image required by CI-CD-Pipeline/core/build-artifact (fetches ci/Dockerfile.multistage).
-# Stage "dependencies" installs Python deps; "runtime" copies app + site-packages for a smaller final layer pattern.
+# syntax=docker/dockerfile:1
+# Multi-stage image for CI-CD-Pipeline/core/build-artifact-multistage (ci/Dockerfile.multistage).
+# Final stage name "production" matches common Jenkins --target production.
+ARG BUILD_TYPE
+ARG GIT_BRANCH
+ARG DRY_RUN
+ARG DEBUG_LOGGING
+
 FROM python:3.8-slim AS dependencies
 
 WORKDIR /semantic_search_streamlit
@@ -7,7 +13,7 @@ WORKDIR /semantic_search_streamlit
 COPY requirements.txt /semantic_search_streamlit/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-FROM python:3.8-slim AS runtime
+FROM python:3.8-slim AS production
 
 WORKDIR /semantic_search_streamlit
 
