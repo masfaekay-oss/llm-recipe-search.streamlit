@@ -5,3 +5,6 @@ __pycache__/
 *.py[cod]
 .DS_Store
 .streamlit/secrets.toml
+
+# Local checkout of shared Jenkins CI library (do not commit).
+pipeline/
