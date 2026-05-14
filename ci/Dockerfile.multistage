@@ -1,5 +1,6 @@
 # Multistage for CI-CD-Pipeline build-artifact-multistage (stage names: base, build, run, export).
-# Every stage line below uses docker.io/library/python:3.8-slim for Jenkins image pre-pull parsing.
+# No COPY --from=... lines: Jenkins getImageNamesFromDockerfile / pullAll may treat stage names as image refs.
+# Every stage uses the same external base: docker.io/library/python:3.8-slim
 FROM docker.io/library/python:3.8-slim AS base
 
 ARG BUILD_TYPE
@@ -31,11 +32,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-COPY --from=build /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+COPY requirements.txt /semantic_search_streamlit/requirements.txt
 
-COPY --from=build /usr/local/bin /usr/local/bin
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY --from=build /semantic_search_streamlit /semantic_search_streamlit
+COPY . /semantic_search_streamlit
 
 EXPOSE 8502
 
@@ -47,11 +48,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-COPY --from=build /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+COPY requirements.txt /semantic_search_streamlit/requirements.txt
 
-COPY --from=build /usr/local/bin /usr/local/bin
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY --from=build /semantic_search_streamlit /semantic_search_streamlit
+COPY . /semantic_search_streamlit
 
 EXPOSE 8502
 
