@@ -1,12 +1,11 @@
-# Stages base, build, run, export are required by CI-CD-Pipeline/core/build-artifact-multistage.
-# Each FROM must be a real registry image (not only a stage alias). Use docker.io/library/... so
-# Jenkins getImageNamesFromDockerfile + pullAll parse images correctly.
+# Multistage for CI-CD-Pipeline build-artifact-multistage (stages: base, build, run, export).
+# Use a full registry path on every stage base image so Jenkins pre-pull can resolve the image.
+FROM docker.io/library/python:3.8-slim AS base
+
 ARG BUILD_TYPE
 ARG GIT_BRANCH
 ARG DRY_RUN
 ARG DEBUG_LOGGING
-
-FROM docker.io/library/python:3.8-slim AS base
 
 ENV PYTHONUNBUFFERED=1
 
