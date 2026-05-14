@@ -1,7 +1,8 @@
 # Stages: base, build, run, export (required by CI-CD-Pipeline/core/build-artifact-multistage).
-# Every FROM must use a real registry image name. Jenkins getImageNamesFromDockerfile + pullAll
-# cannot parse "FROM base AS build" (it tries to pull image "base") — use python:3.8-slim on each FROM.
-# Do not use a top-level # syntax= line; some Jenkins parsers mis-handle it and yield empty pull lists.
+# Every FROM must use a real registry image (not "FROM build AS run").
+# Jenkins getImageNamesFromDockerfile also mis-reads COPY --from=base / COPY --from=build as images to
+# pull — use COPY --from=0 / COPY --from=1 (0-based stage index: 0=base, 1=build, 2=run, 3=export).
+# Do not use a top-level # syntax= line; some parsers mis-handle it.
 ARG BUILD_TYPE
 ARG GIT_BRANCH
 ARG DRY_RUN
@@ -17,8 +18,8 @@ FROM python:3.8-slim AS build
 
 WORKDIR /semantic_search_streamlit
 
-# Keep base in the build graph (some validators expect every named stage to be referenced).
-COPY --from=base /etc/debian_version /tmp/base-debian_version
+# Reference stage 0 (base) without using the name "base" in COPY --from (Jenkins pullAll).
+COPY --from=0 /etc/debian_version /tmp/base-debian_version
 
 COPY requirements.txt /semantic_search_streamlit/requirements.txt
 
@@ -32,7 +33,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-COPY --from=build /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+COPY --from=1 /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
 
 COPY . /semantic_search_streamlit
 
@@ -46,7 +47,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-COPY --from=build /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+COPY --from=1 /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
 
 COPY . /semantic_search_streamlit
 
