@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/python:3.8-slim AS base
+FROM {{BASE_REGISTRY_URL}}/docker/library/python:3.8-slim AS base
 
 ARG BUILD_TYPE
 ARG GIT_BRANCH
@@ -9,7 +9,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-FROM public.ecr.aws/docker/library/python:3.8-slim AS build
+FROM {{BASE_REGISTRY_URL}}/docker/library/python:3.8-slim AS build
 
 WORKDIR /semantic_search_streamlit
 
@@ -23,7 +23,7 @@ COPY . /semantic_search_streamlit
 
 RUN python -c "import streamlit, elasticsearch, openai, requests, dotenv"
 
-FROM public.ecr.aws/docker/library/python:3.8-slim AS run
+FROM {{BASE_REGISTRY_URL}}/docker/library/python:3.8-slim AS run
 
 ENV PYTHONUNBUFFERED=1
 
@@ -39,7 +39,7 @@ EXPOSE 8502
 
 CMD ["python", "-m", "streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
 
-FROM public.ecr.aws/docker/library/python:3.8-slim AS export
+FROM {{BASE_REGISTRY_URL}}/docker/library/python:3.8-slim AS export
 
 ENV PYTHONUNBUFFERED=1
 
@@ -50,6 +50,8 @@ COPY requirements.txt /semantic_search_streamlit/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /semantic_search_streamlit
+
+RUN printf '%s\n' '{"repo":"run","name":"llm-intent-search-streamlit","tag":"{{VERSION}}","qualifiedId":"llm-intent-search-streamlit:{{VERSION}}"}' > /build.json
 
 EXPOSE 8502
 

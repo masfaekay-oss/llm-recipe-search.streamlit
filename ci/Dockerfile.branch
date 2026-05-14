@@ -1,6 +1,6 @@
 # Branch / release image for this repo (Streamlit). Not site-search: no Poetry, no pip install site-search.
 # Pair with the same layout as Dockerfile.run so CI can build a branch image without internal parameterized_branch.sh.
-FROM python:3.8-slim
+FROM {{BASE_REGISTRY_URL}}/docker/library/python:3.8-slim
 
 WORKDIR /semantic_search_streamlit
 
