@@ -1,3 +1,11 @@
+# Stages base, build, run, export are required by CI-CD-Pipeline/core/build-artifact-multistage.
+# Each FROM must be a real registry image (not only a stage alias). Use docker.io/library/... so
+# Jenkins getImageNamesFromDockerfile + pullAll parse images correctly.
+ARG BUILD_TYPE
+ARG GIT_BRANCH
+ARG DRY_RUN
+ARG DEBUG_LOGGING
+
 FROM docker.io/library/python:3.8-slim AS base
 
 ENV PYTHONUNBUFFERED=1
@@ -7,6 +15,8 @@ WORKDIR /semantic_search_streamlit
 FROM docker.io/library/python:3.8-slim AS build
 
 WORKDIR /semantic_search_streamlit
+
+COPY --from=base /etc/debian_version /tmp/base-debian_version
 
 COPY requirements.txt /semantic_search_streamlit/requirements.txt
 
@@ -24,11 +34,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-COPY requirements.txt /semantic_search_streamlit/requirements.txt
+COPY --from=build /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
 
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --from=build /usr/local/bin /usr/local/bin
 
-COPY . /semantic_search_streamlit
+COPY --from=build /semantic_search_streamlit /semantic_search_streamlit
 
 EXPOSE 8502
 
@@ -40,11 +50,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-COPY requirements.txt /semantic_search_streamlit/requirements.txt
+COPY --from=build /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
 
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --from=build /usr/local/bin /usr/local/bin
 
-COPY . /semantic_search_streamlit
+COPY --from=build /semantic_search_streamlit /semantic_search_streamlit
 
 EXPOSE 8502
 

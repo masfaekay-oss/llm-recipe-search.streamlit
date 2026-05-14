@@ -1,6 +1,5 @@
 {
   "version": "1.0",
-  "arch_force_build": "linux/arm64",
   "ci": {
     "disableUnitTests": true,
     "packageRepository": "s3"
