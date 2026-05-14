@@ -1,5 +1,5 @@
 # Build image for Squadron / CI. No compile step yet; extend with tests when added (mirror search service pattern).
-FROM {{BASE_REGISTRY_URL}}/docker/library/python:3.8-slim
+FROM {{BASE_REGISTRY_URL}}/docker-hub/library/python:3.8-slim
 
 WORKDIR /semantic_search_streamlit
 

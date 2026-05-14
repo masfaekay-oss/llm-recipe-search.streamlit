@@ -1,4 +1,5 @@
-FROM {{BASE_REGISTRY_URL}}/docker/library/python:3.8-slim AS base
+# Base image path matches AWS ECR pull-through cache for Docker Hub official images (docker-hub/library/...).
+FROM {{BASE_REGISTRY_URL}}/docker-hub/library/python:3.8-slim AS base
 
 ARG BUILD_TYPE
 ARG GIT_BRANCH
@@ -9,7 +10,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-FROM {{BASE_REGISTRY_URL}}/docker/library/python:3.8-slim AS build
+FROM {{BASE_REGISTRY_URL}}/docker-hub/library/python:3.8-slim AS build
 
 WORKDIR /semantic_search_streamlit
 
@@ -23,7 +24,7 @@ COPY . /semantic_search_streamlit
 
 RUN python -c "import streamlit, elasticsearch, openai, requests, dotenv"
 
-FROM {{BASE_REGISTRY_URL}}/docker/library/python:3.8-slim AS run
+FROM {{BASE_REGISTRY_URL}}/docker-hub/library/python:3.8-slim AS run
 
 ENV PYTHONUNBUFFERED=1
 
@@ -39,7 +40,7 @@ EXPOSE 8502
 
 CMD ["python", "-m", "streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
 
-FROM {{BASE_REGISTRY_URL}}/docker/library/python:3.8-slim AS export
+FROM {{BASE_REGISTRY_URL}}/docker-hub/library/python:3.8-slim AS export
 
 ARG VERSION={{VERSION}}
 ENV VERSION=${VERSION}

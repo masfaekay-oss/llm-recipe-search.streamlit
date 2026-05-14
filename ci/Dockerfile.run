@@ -1,5 +1,5 @@
 # Runtime image for Squadron / CI (pair with ci/manifest.json — copy from internal Python search service).
-FROM {{BASE_REGISTRY_URL}}/docker/library/python:3.8-slim
+FROM {{BASE_REGISTRY_URL}}/docker-hub/library/python:3.8-slim
 
 WORKDIR /semantic_search_streamlit
 
