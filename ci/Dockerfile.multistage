@@ -1,5 +1,7 @@
-# syntax=docker/dockerfile:1
-# Stages must match CI-CD-Pipeline/core/build-artifact-multistage: base, build, run, export
+# Stages: base, build, run, export (required by CI-CD-Pipeline/core/build-artifact-multistage).
+# Every FROM must use a real registry image name. Jenkins getImageNamesFromDockerfile + pullAll
+# cannot parse "FROM base AS build" (it tries to pull image "base") — use python:3.8-slim on each FROM.
+# Do not use a top-level # syntax= line; some Jenkins parsers mis-handle it and yield empty pull lists.
 ARG BUILD_TYPE
 ARG GIT_BRANCH
 ARG DRY_RUN
@@ -11,12 +13,19 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /semantic_search_streamlit
 
-FROM base AS build
+FROM python:3.8-slim AS build
+
+WORKDIR /semantic_search_streamlit
 
 COPY requirements.txt /semantic_search_streamlit/requirements.txt
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-FROM build AS run
+FROM python:3.8-slim AS run
+
+WORKDIR /semantic_search_streamlit
+
+COPY --from=build /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
 
 COPY . /semantic_search_streamlit
 
@@ -24,5 +33,14 @@ EXPOSE 8502
 
 CMD ["python", "-m", "streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
 
-# Final publishable image (same filesystem as run; required stage name for pipeline export)
-FROM run AS export
+FROM python:3.8-slim AS export
+
+WORKDIR /semantic_search_streamlit
+
+COPY --from=build /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+
+COPY . /semantic_search_streamlit
+
+EXPOSE 8502
+
+CMD ["python", "-m", "streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
