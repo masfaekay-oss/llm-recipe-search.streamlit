@@ -1,0 +1,64 @@
+{
+  "version": "1.0",
+  "ci": {
+    "disableUnitTests": true
+  },
+  "deployable": "service",
+  "role": "app.ecs.basic",
+  "resources": {
+    "cpu": 512,
+    "memory": 1024
+  },
+  "scaling": {
+    "min": 1,
+    "max": 5,
+    "metric": {
+      "type": "traffic",
+      "measurement": "requestCount",
+      "target": 200,
+      "statistic": "sum"
+    }
+  },
+  "maintainers": {
+    "slack": [
+      "@srtx-dev"
+    ]
+  },
+  "healthCheck": "/_stcore/health",
+  "network": {
+    "dns": [
+      "dotdash.com"
+    ],
+    "access": "internal",
+    "externalPorts": [
+      80,
+      443
+    ],
+    "exposedPorts": [
+      {
+        "port": 8502,
+        "name": "http"
+      }
+    ]
+  },
+  "description": "Streamlit POC for NL recipe search: compares current / filtered / LLM-intent lanes against site-search GET /search. Optional GET /intent/preview panel. Not the site-search FastAPI service — different process (Streamlit on 8502).",
+  "documentation": "https://bitbucket.org/people-inc/llm-intent-search-streamlit/src/main/README.md",
+  "jiraProject": "CPI",
+  "incidentManagement": {
+    "pagerdutyEscalationId": "PZATJN3"
+  },
+  "workflow": {
+    "type": "RELEASE",
+    "options": {
+      "verification": [
+        "manual"
+      ],
+      "automatedDeploy": true,
+      "multiRegion": false
+    }
+  },
+  "dependencies": {
+    "resource": [],
+    "service": []
+  }
+}
